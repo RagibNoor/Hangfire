@@ -48,7 +48,7 @@ namespace Hangfire
             = new Lazy<IBackgroundJobClient>(() => new BackgroundJobClient(), LazyThreadSafetyMode.PublicationOnly); 
 
         private static readonly Func<IBackgroundJobClient> DefaultFactory
-            = () => CachedClient.Value;
+            = () =>  new Lazy<IBackgroundJobClient>(() => new BackgroundJobClient(), LazyThreadSafetyMode.PublicationOnly).Value;
 
         private static Func<IBackgroundJobClient> _clientFactory;
         private static readonly object ClientFactoryLock = new object();

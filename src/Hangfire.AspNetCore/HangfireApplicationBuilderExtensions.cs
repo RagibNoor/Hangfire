@@ -25,8 +25,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Hosting;
 #endif
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.DependencyInjection;
 using Hangfire.Common;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Hangfire
 {
@@ -40,19 +40,18 @@ namespace Hangfire
         {
             if (app == null) throw new ArgumentNullException(nameof(app));
             if (pathMatch == null) throw new ArgumentNullException(nameof(pathMatch));
-
+            using (var scope = app.ApplicationServices.CreateScope())
+            {
+                var services = app.ApplicationServices;
+                storage = storage ?? scope.ServiceProvider.GetRequiredService<JobStorage>();
+                options = options ?? services.GetService<DashboardOptions>() ?? new DashboardOptions();
+                options.TimeZoneResolver = options.TimeZoneResolver ?? scope.ServiceProvider.GetService<ITimeZoneResolver>();
+                var routes = scope.ServiceProvider.GetRequiredService<RouteCollection>();
+           
             HangfireServiceCollectionExtensions.ThrowIfNotConfigured(app.ApplicationServices);
 
-            var services = app.ApplicationServices;
-
-            storage = storage ?? services.GetRequiredService<JobStorage>();
-            options = options ?? services.GetService<DashboardOptions>() ?? new DashboardOptions();
-            options.TimeZoneResolver = options.TimeZoneResolver ?? services.GetService<ITimeZoneResolver>();
-
-            var routes = app.ApplicationServices.GetRequiredService<RouteCollection>();
-
             app.Map(new PathString(pathMatch), x => x.UseMiddleware<AspNetCoreDashboardMiddleware>(storage, options, routes));
-
+            }
             return app;
         }
 
@@ -68,7 +67,7 @@ namespace Hangfire
             if (app == null) throw new ArgumentNullException(nameof(app));
             
             HangfireServiceCollectionExtensions.ThrowIfNotConfigured(app.ApplicationServices);
-
+            IServiceScope scope = app.ApplicationServices.CreateScope();
             var services = app.ApplicationServices;
 #if NETCOREAPP3_0
             var lifetime = services.GetRequiredService<IHostApplicationLifetime>();

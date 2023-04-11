@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net45;net46;netstandard1.3;netstandard2.0;</TargetFrameworks>
+    <TargetFrameworks>net46;netstandard2.0;</TargetFrameworks>
     <DebugType>portable</DebugType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -31,12 +31,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="5.0.1" />
     <PackageReference Include="Microsoft.Owin" Version="3.0.1" />
   </ItemGroup>
-  
-  <ItemGroup Condition="'$(TargetFramework)'=='netstandard1.3'">
-    <PackageReference Include="System.Threading.Thread" Version="4.0.0" />
-    <PackageReference Include="System.Threading.ThreadPool" Version="4.0.10" />
-    <PackageReference Include="Newtonsoft.Json" Version="9.0.1" />
-  </ItemGroup>
+
 
   <ItemGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
     <PackageReference Include="Microsoft.CSharp" Version="4.4.0" />
@@ -202,5 +197,11 @@
     <Compile Update="Dashboard\Pages\SucceededJobs.cshtml.cs">
       <DependentUpon>SucceededJobs.cshtml</DependentUpon>
     </Compile>
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions">
+      <Version>3.1.22</Version>
+    </PackageReference>
   </ItemGroup>
 </Project>

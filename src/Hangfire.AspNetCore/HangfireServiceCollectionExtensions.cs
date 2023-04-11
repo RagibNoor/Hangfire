@@ -46,22 +46,21 @@ namespace Hangfire
         {
             if (services == null) throw new ArgumentNullException(nameof(services));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-
-            services.TryAddSingletonChecked(_ => JobStorage.Current);
-            services.TryAddSingletonChecked(_ => JobActivator.Current);
-
-            services.TryAddSingleton(_ => DashboardRoutes.Routes);
-            services.TryAddSingleton<IJobFilterProvider>(_ => JobFilterProviders.Providers);
-            services.TryAddSingleton<ITimeZoneResolver>(_ => new DefaultTimeZoneResolver());
             
-            services.TryAddSingleton(x => new DefaultClientManagerFactory(x));
-            services.TryAddSingletonChecked<IBackgroundJobClientFactory>(x => x.GetService<DefaultClientManagerFactory>());
-            services.TryAddSingletonChecked<IRecurringJobManagerFactory>(x => x.GetService<DefaultClientManagerFactory>());
+            services.AddScoped(_ => JobActivator.Current);
 
-            services.TryAddSingletonChecked(x => x
+            services.AddScoped(_ => DashboardRoutes.Routes);
+            services.AddScoped<IJobFilterProvider>(_ => JobFilterProviders.Providers);
+            services.AddScoped<ITimeZoneResolver>(_ => new DefaultTimeZoneResolver());
+            
+            services.AddScoped(x => new DefaultClientManagerFactory(x));
+            services.AddScoped<IBackgroundJobClientFactory>(x => x.GetService<DefaultClientManagerFactory>());
+            services.AddScoped<IRecurringJobManagerFactory>(x => x.GetService<DefaultClientManagerFactory>());
+
+            services.AddScoped(x => x
                 .GetService<IBackgroundJobClientFactory>().GetClient(x.GetService<JobStorage>()));
 
-            services.TryAddSingletonChecked(x => x
+            services.AddScoped(x => x
                 .GetService<IRecurringJobManagerFactory>().GetManager(x.GetService<JobStorage>()));
 
             // IGlobalConfiguration serves as a marker indicating that Hangfire's services 
@@ -215,14 +214,16 @@ namespace Hangfire
             BackgroundJobServerOptions options)
         {
             ThrowIfNotConfigured(provider);
+            using (var scope = provider.CreateScope())
+            {
+                storage = storage ?? scope.ServiceProvider.GetService<JobStorage>() ?? JobStorage.Current;
 
-            storage = storage ?? provider.GetService<JobStorage>() ?? JobStorage.Current;
-            additionalProcesses = additionalProcesses ?? provider.GetServices<IBackgroundProcess>();
+            additionalProcesses = additionalProcesses ?? scope.ServiceProvider.GetServices<IBackgroundProcess>();
 
-            options.Activator = options.Activator ?? provider.GetService<JobActivator>();
-            options.FilterProvider = options.FilterProvider ?? provider.GetService<IJobFilterProvider>();
-            options.TimeZoneResolver = options.TimeZoneResolver ?? provider.GetService<ITimeZoneResolver>();
-
+            options.Activator = options.Activator ?? scope.ServiceProvider.GetService<JobActivator>();
+            options.FilterProvider = options.FilterProvider ?? scope.ServiceProvider.GetService<IJobFilterProvider>();
+            options.TimeZoneResolver = options.TimeZoneResolver ?? scope.ServiceProvider.GetService<ITimeZoneResolver>();
+            }
             GetInternalServices(provider, out var factory, out var stateChanger, out var performer);
 
 #if NETCOREAPP3_0_OR_GREATER
